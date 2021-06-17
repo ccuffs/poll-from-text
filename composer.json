@@ -1,0 +1,28 @@
+{
+    "name": "ccuffs/poll-from-text",
+    "description": "Convenient package to create polls (questionnaires) from pure text minimally organized in lines.",
+    "keywords": ["poll", "survey", "questionnaire", "nlp", "composer", "package"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Fernando Bevilacqua",
+            "email": "fernando.bevilacqua@uffs.edu.br",
+            "homepage": "https://fernandobevilacqua.com"
+        }
+    ],
+    "type": "library",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.1"
+    },
+    "require-dev": {
+		"phpunit/phpunit": "9.3.10",
+        "pestphp/pest": "^0.3.12"
+    },
+    "autoload": {
+        "psr-4": {
+            "CCUFFS\\Text\\": "src/"
+        }
+    }
+}

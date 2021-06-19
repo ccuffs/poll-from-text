@@ -16,6 +16,11 @@ class PollFromText
 
     protected function whatIsText($text) {
         $text = trim($text);
+
+        if (empty($text)) {
+            return 'empty';
+        }
+
         $firstPart = '';
         $indexFirstSpace = stripos($text, ' ');
 
@@ -25,7 +30,6 @@ class PollFromText
 
         switch ($firstPart) {
             case '-': return 'option';
-            case '':  return 'empty';
             default:  return 'question';
         }
     }
@@ -37,6 +41,11 @@ class PollFromText
         ];
     }
 
+    protected function amendPreviousQuestion(& $questions, $text) {
+        $index = count($questions) - 1;
+        $questions[$index]['text'] .= ' ' . $text;
+    }    
+
     protected function createOption($text) {
         $indexFirstSpace = stripos($text, ' ');
 
@@ -44,7 +53,7 @@ class PollFromText
             return $text;
         }
 
-        return substr($text, $indexFirstSpace + 1);
+        return trim(substr($text, $indexFirstSpace + 1));
     }
 
     protected function addOptionToPreviousQuestion(& $questions, $text) {
@@ -65,7 +74,7 @@ class PollFromText
     /**
      * 
      */
-    public function parse($text)
+    public function parse($text, array $config = [])
     {
         $text = trim($text);
 
@@ -75,17 +84,31 @@ class PollFromText
 
         $questions = [];
         $parts = $this->split($text);
+        $previousType = '';
+        $currentType = '';
 
         for($i = 0, $size = count($parts); $i < $size; $i++) {
             $currentLine = trim($parts[$i]);
+
+            if (empty($currentLine)) {
+                $currentType = '';
+                $previousType = 'empty';                
+                continue;
+            }
+
             $currentType = $this->whatIsText($currentLine);
 
             if ($currentType == 'question') {
-                $questions[] = $this->createQuestion($currentLine);
-
+                if($previousType == 'question' && @$config['mutliline_question']) {
+                    $this->amendPreviousQuestion($questions, $currentLine);
+                } else {
+                    $questions[] = $this->createQuestion($currentLine);
+                }
             } else if ($currentType == 'option') {
                 $this->addOptionToPreviousQuestion($questions, $currentLine);
             }
+
+            $previousType = $currentType;
         }
 
         return $questions;

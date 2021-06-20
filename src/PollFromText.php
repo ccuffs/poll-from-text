@@ -44,12 +44,22 @@ class PollFromText
 
             $indexFirstSeparator = stripos($text, $separator);
             $text = trim(substr($text, $indexFirstSeparator + 1));
+            $data = $matches[0][1];
 
             return [
                 'type' => $separator == ')' ? 'option' : 'question',
                 'text' => $text,
-                'data' => isset($matches[0][3]) ? $matches[0][3] : $matches[0][2]
+                'data' => $separator == ')' ? str_replace($separator, '', $data) : $this->decodeAttribute($text, $data),
             ];
+        }
+    }
+
+    protected function decodeAttribute($text, $attrData) {
+        try {
+            $flags = JSON_THROW_ON_ERROR | JSON_NUMERIC_CHECK;
+            $attributes = json_decode($attrData, true, 512, $flags);
+        } catch (\JsonException $e) {
+            throw new \UnexpectedValueException("Attribute string '$attrData' in question '$text' is not valid JSON.", 1, $e);
         }
     }
 

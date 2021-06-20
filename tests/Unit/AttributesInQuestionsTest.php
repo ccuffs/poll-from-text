@@ -4,7 +4,7 @@ $poller = new CCUFFS\Text\PollFromText();
 
 test('recognize attribute simple question', function() use ($poller) {
     $poll = $poller->parse('
-        {attr} Choose favorite color
+        {"attr":true} Choose favorite color
     ');
 
     $this->assertEquals([
@@ -17,7 +17,7 @@ test('recognize attribute simple question', function() use ($poller) {
 
 test('recognize attribute select question', function() use ($poller) {
     $poll = $poller->parse('
-        {attr} Choose favorite color
+        {"attr":true} Choose favorite color
         * Green
     ');
 
@@ -32,7 +32,7 @@ test('recognize attribute select question', function() use ($poller) {
 
 test('complext attribute list', function() use ($poller) {
     $poll = $poller->parse('
-        {attr:value attr:value} Choose favorite color
+        {"attr":"value", "attr2":"value"} Choose favorite color
     ');
 
     $this->assertEquals([
@@ -45,7 +45,7 @@ test('complext attribute list', function() use ($poller) {
 
 test('question with attribute char', function() use ($poller) {
     $poll = $poller->parse('
-        {attr:value attr:value} Choose { favorite } color
+        {"attr":"value"} Choose { favorite } color
     ');
 
     $this->assertEquals([
@@ -55,3 +55,9 @@ test('question with attribute char', function() use ($poller) {
         ],
     ], $poll);
 });
+
+test('throw exception on wrong attribute format', function() use ($poller) {
+    $poll = $poller->parse('
+        {attr = "value" attr2 = "value"} Choose favorite color
+    ');
+})->throws(UnexpectedValueException::class);

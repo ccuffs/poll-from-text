@@ -56,7 +56,7 @@ test('multiline simple question', function() use ($poller) {
 
 test('multiline parsed as one simple question', function() use ($poller) {
     $question = '
-     This is one question
+      This is one question
         This is another
     ';
     $poll = $poller->parse($question, [

@@ -14,51 +14,74 @@ class PollFromText
         return preg_split('/\R+/', $text, 0, PREG_SPLIT_NO_EMPTY);
     }
 
-    protected function whatIsText($text) {
+    protected function extractStructure($text) {
+        $re = '/^(\*|-|\{(.*)\}|(.*)\))/m';
+
         $text = trim($text);
+        preg_match_all($re, $text, $matches, PREG_SET_ORDER, 0);
 
-        if (empty($text)) {
-            return 'empty';
+        if (count($matches) == 0) {
+            return [
+                'type' => 'question',
+                'text' => $text
+            ];
         }
 
-        $firstPart = '';
-        $indexFirstSpace = stripos($text, ' ');
+        $matchedItem = $matches[0][0];
 
-        if ($indexFirstSpace !== false) {
-            $firstPart = substr($text, 0, $indexFirstSpace);
+        if ($matchedItem == '*' || $matchedItem == '-') {
+            $indexFirstSpace = stripos($text, ' ');
+            return [
+                'type' => 'option',
+                'text' => substr($text, $indexFirstSpace)
+            ];
         }
 
-        switch ($firstPart) {
-            case '-': return 'option';
-            default:  return 'question';
+        foreach([')', '}'] as $separator) {
+            if (stripos($matchedItem, $separator) === false) {
+                continue;
+            }
+
+            $indexFirstSeparator = stripos($text, $separator);
+            $text = trim(substr($text, $indexFirstSeparator + 1));
+
+            return [
+                'type' => $separator == ')' ? 'option' : 'question',
+                'text' => $text,
+                'data' => isset($matches[0][3]) ? $matches[0][3] : $matches[0][2]
+            ];
         }
     }
 
-    protected function createQuestion($text) {
+    protected function createQuestion(array $structure) {
         return [
-            'text' => $text,
+            'text' => $structure['text'],
             'type' => 'input'
         ];
     }
 
-    protected function amendPreviousQuestion(& $questions, $text) {
+    protected function amendPreviousQuestion(& $questions, array $structure) {
+        $text = $structure['text'];
         $index = count($questions) - 1;
         $questions[$index]['text'] .= ' ' . $text;
     }    
 
-    protected function createOption($text) {
-        $indexFirstSpace = stripos($text, ' ');
+    protected function createOption(array $structure) {
+        $text = trim($structure['text']);
 
-        if ($indexFirstSpace === false) {
-            return $text;
+        if (!empty($structure['data'])) {
+            $key = $structure['data'];
+            return [
+                $key => $text
+            ];
         }
-
-        return trim(substr($text, $indexFirstSpace + 1));
+        
+        return [$text];
     }
 
-    protected function addOptionToPreviousQuestion(& $questions, $text) {
+    protected function addOptionToPreviousQuestion(& $questions, array $structure) {
         if (count($questions) == 0) {
-            throw new \Exception('Unexepect option "- abc..." without preceding simple text "abc..."');
+            throw new \Exception('Unexepect option, e.g. "- abc...", "a) abc", without preceding simple text, e.g. "abc..."');
         }
 
         $index = count($questions) - 1;
@@ -68,7 +91,7 @@ class PollFromText
             $questions[$index]['options'] = [];
         }
 
-        $questions[$index]['options'][] = $this->createOption($text);
+        $questions[$index]['options'] = array_merge($questions[$index]['options'], $this->createOption($structure));
     }
 
     /**
@@ -96,16 +119,17 @@ class PollFromText
                 continue;
             }
 
-            $currentType = $this->whatIsText($currentLine);
+            $structure = $this->extractStructure($currentLine);
+            $currentType = $structure['type'];
 
             if ($currentType == 'question') {
                 if($previousType == 'question' && @$config['mutliline_question']) {
-                    $this->amendPreviousQuestion($questions, $currentLine);
+                    $this->amendPreviousQuestion($questions, $structure);
                 } else {
-                    $questions[] = $this->createQuestion($currentLine);
+                    $questions[] = $this->createQuestion($structure);
                 }
             } else if ($currentType == 'option') {
-                $this->addOptionToPreviousQuestion($questions, $currentLine);
+                $this->addOptionToPreviousQuestion($questions, $structure);
             }
 
             $previousType = $currentType;

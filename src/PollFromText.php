@@ -111,8 +111,7 @@ class PollFromText
         $text = trim($text);
         $structure = [
             'type' => 'question',
-            'text' => $text,
-            'attributes' => []
+            'text' => $text
         ];
 
         if (empty($text)) {
@@ -146,10 +145,16 @@ class PollFromText
     }
 
     protected function createQuestion(array $structure) {
-        return [
+        $item = [
             'text' => $structure['text'],
             'type' => 'input'
         ];
+
+        if (isset($structure['data'])) {
+            $item['data'] = $structure['data'];
+        }
+
+        return $item;
     }
 
     protected function amendPreviousQuestion(& $questions, array $structure) {

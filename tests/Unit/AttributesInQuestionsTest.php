@@ -11,6 +11,7 @@ test('recognize attribute simple question', function() use ($poller) {
         [
             'text' => 'Choose favorite color',
             'type' => 'input',
+            'data' => ['attr' => true]            
         ],
     ], $poll);
 });
@@ -25,20 +26,22 @@ test('recognize attribute select question', function() use ($poller) {
         [
             'text' => 'Choose favorite color',
             'type' => 'select',
-            'options' => ['Green']
+            'options' => ['Green'],
+            'data' => ['attr' => true]
         ],
     ], $poll);
 });
 
 test('complext attribute list', function() use ($poller) {
     $poll = $poller->parse('
-        {"attr":"value", "attr2":"value"} Choose favorite color
+        {"attr":"value", "attr2":"value"} Type favorite color
     ');
 
     $this->assertEquals([
         [
-            'text' => 'Choose favorite color',
+            'text' => 'Type favorite color',
             'type' => 'input',
+            'data' => ['attr' => 'value', 'attr2' => 'value']
         ],
     ], $poll);
 });
@@ -52,6 +55,7 @@ test('question with attribute char', function() use ($poller) {
         [
             'text' => 'Choose { favorite } color',
             'type' => 'input',
+            'data' => ['attr' => 'value']
         ],
     ], $poll);
 });

@@ -9,6 +9,10 @@ namespace CCUFFS\Text;
  */
 class PollFromText
 {
+    public static function make($text, array $config = []) {
+        return (new PollFromText())->parse($text, $config);
+    }
+
     protected function split($text)
     {
         return preg_split('/\R+/', $text, 0, PREG_SPLIT_NO_EMPTY);

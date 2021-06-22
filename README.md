@@ -32,6 +32,8 @@ composer require ccuffs/poll-from-text
 
 Instantiate the class `CCUFFS\Text\PollFromText` then call `parse()`:
 
+>*Tip:* use `CCUFFS\Text\PollFromText::make()` if you don't want to instantiate an object.
+
 ```php
 $poller = new CCUFFS\Text\PollFromText();
 $questions = $poller->parse('Favorite color?')

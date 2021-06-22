@@ -14,52 +14,134 @@ class PollFromText
         return preg_split('/\R+/', $text, 0, PREG_SPLIT_NO_EMPTY);
     }
 
-    protected function extractStructure($text) {
-        $re = '/^(\*|-|\{(.*)\}|(.*)\))/m';
+    protected function findJsonStringStartingAt($startIndex, $text) {
+        $json = '';
+        $chars = 0;
+        $braces = 0;
 
-        $text = trim($text);
-        preg_match_all($re, $text, $matches, PREG_SET_ORDER, 0);
-
-        if (count($matches) == 0) {
-            return [
-                'type' => 'question',
-                'text' => $text
-            ];
+        if ($text[$startIndex] != '{') {
+            return '';
         }
 
-        $matchedItem = $matches[0][0];
+        do {
+            $currentChar = $text[$startIndex];
+            $json .= $currentChar;
 
-        if ($matchedItem == '*' || $matchedItem == '-') {
-            $indexFirstSpace = stripos($text, ' ');
-            return [
-                'type' => 'option',
-                'text' => substr($text, $indexFirstSpace)
-            ];
-        }
+            if ($currentChar == '{') { $braces++; }
+            if ($currentChar == '}') { $braces--; }
 
-        foreach([')', '}'] as $separator) {
-            if (stripos($matchedItem, $separator) === false) {
-                continue;
+            if ($braces == 0) {
+                return $json;
             }
 
-            $indexFirstSeparator = stripos($text, $separator);
-            $text = trim(substr($text, $indexFirstSeparator + 1));
-            $data = $matches[0][1];
+        } while ($startIndex++ < strlen($text));
 
-            return [
-                'type' => $separator == ')' ? 'option' : 'question',
-                'text' => $text,
-                'data' => $separator == ')' ? str_replace($separator, '', $data) : $this->decodeAttribute($text, $data),
-            ];
-        }
+        return $text;
     }
 
-    protected function decodeAttribute($text, $attrData) {
+    protected function fillStructureWithDataAttribute(& $structure) {
+        $text = trim($structure['text']);
+        $textFirstChar = $text[0];
+
+        if ($textFirstChar != '{') {
+            return false;
+        }
+
+        // If we reached this point, we have something like the following:
+        // {...} text here
+        // {...} text here { this should be text } again
+
+        $data = $this->findJsonStringStartingAt(0, $text);
+
+        if (empty($data)) {
+            return false;
+        }
+
+        $textWithoutAttr = str_replace($data, '', $text);
+
+        $structure['text'] = trim($textWithoutAttr);
+        $structure['data'] = $this->decodeAttribute($textWithoutAttr, $data);
+
+        return true;
+    }
+
+    protected function fillStructureWithOption(& $structure) {
+        $text = trim($structure['text']);
+        $firstChar = $text[0];
+        $optionChars = ['-', '*']; // TODO: make a config?
+
+        if (in_array($firstChar, $optionChars)) {
+            // This is a option like the following:
+            // - my option
+            // * an option
+            $structure['text'] = trim(substr($text, 1));
+            $structure['type'] = 'option';
+
+            return true;
+        }
+
+        // Here we still might have options like:
+        //   a) option text
+        //   1) option text
+        //   no_space_here) option text
+        $separator = ')'; // TODO: make a config? Multiple separators (array)?
+        $separatorIndex = stripos($text, $separator);
+
+        if ($separatorIndex === false) {
+            return false;
+        }
+
+        // This is a option with a separator, e.g. a)
+        $value = substr($text, 0, $separatorIndex);
+        $text = trim(substr($text, $separatorIndex + 1));
+
+        $valueHasSpace = stripos($value, ' ') !== false;
+
+        if ($valueHasSpace) {
+            return false;
+        }
+
+        $structure['text'] = $text;
+        $structure['value'] = $value;
+        $structure['type'] = 'option';
+        return true;
+    }
+
+    protected function extractStructure($text) {
+        $text = trim($text);
+        $structure = [
+            'type' => 'question',
+            'text' => $text,
+            'attributes' => []
+        ];
+
+        if (empty($text)) {
+            return $structure;
+        }
+
+        // Something like the following:
+        // {...} text here
+        // {...} text here { this should be text } again
+        $this->fillStructureWithDataAttribute($structure);
+
+        // Something like the following:
+        //   a) option text
+        //   1) option text
+        //   no_space_here) option text
+        //   - option text
+        //   * option text
+        $this->fillStructureWithOption($structure);
+
+        return $structure;
+    }
+
+    protected function decodeAttribute($text, $dataAttr) {
         try {
             $flags = JSON_THROW_ON_ERROR | JSON_NUMERIC_CHECK;
-            $attributes = json_decode($attrData, true, 512, $flags);
+            $data = json_decode($dataAttr, true, 512, $flags);
+            return $data;
         } catch (\JsonException $e) {
-            throw new \UnexpectedValueException("Attribute string '$attrData' in question '$text' is not valid JSON.", 1, $e);
+            throw new \UnexpectedValueException("Data attribute '$dataAttr' is not valid JSON in use at text '$text'.", 1, $e);
         }
     }
 
@@ -80,7 +162,11 @@ class PollFromText
         $text = trim($structure['text']);
 
         if (!empty($structure['data'])) {
-            $key = $structure['data'];
+            $text = ['text' => $text, 'data' => $structure['data']];
+        }        
+
+        if (!empty($structure['value'])) {
+            $key = $structure['value'];
             return [
                 $key => $text
             ];

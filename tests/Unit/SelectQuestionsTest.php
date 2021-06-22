@@ -117,6 +117,27 @@ test('multiple options mixed spaces, dashes and stars', function() use ($poller)
     ], $poll);
 });
 
+test('multiple options mixed parenthesis, spaces and underline', function() use ($poller) {
+    $poll = $poller->parse('
+        Choose favorite food
+        aaaa)  Pasta
+        bbb_bb) Steak
+        c_c_1__c) Tofu
+    ');
+
+    $this->assertEquals([
+        [
+            'text' => 'Choose favorite food',
+            'type' => 'select',
+            'options' => [
+                'aaaa' => 'Pasta',
+                'bbb_bb' => 'Steak',
+                'c_c_1__c' => 'Tofu'
+            ]
+        ],
+    ], $poll);
+});
+
 test('no option (forgot dash or start)', function() use ($poller) {
     $poll = $poller->parse('
         Choose favorite color
@@ -130,6 +151,24 @@ test('no option (forgot dash or start)', function() use ($poller) {
         ],
         [
             'text' => 'Green',
+            'type' => 'input',
+        ],        
+    ], $poll);
+});
+
+test('no option (parenthesis with space)', function() use ($poller) {
+    $poll = $poller->parse('
+        Choose favorite color
+        a ) Green
+    ');
+
+    $this->assertEquals([
+        [
+            'text' => 'Choose favorite color',
+            'type' => 'input',
+        ],
+        [
+            'text' => 'a ) Green',
             'type' => 'input',
         ],        
     ], $poll);

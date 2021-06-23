@@ -3,12 +3,21 @@
 namespace CCUFFS\Text;
 
 /**
- * 
+ * Class to parse semi-structured text into structured-data that can be used to build questionnaires (forms).
+ * The main goal is to allow end users to build dynamic forms, e.g. Google Forms, using plain text like they
+ * would if the forms were to be printed on paper.
  *
  * @author Fernando Bevilacqua <fernando.bevilacqua@uffs.edu.br>
+ * @license MIT
  */
 class PollFromText
 {
+    /**
+     * @param mixed $text text to be parsed into a questionnaire
+     * @param array $config specific configuration for this parsing, e.g. allow multiline questions.
+     * 
+     * @return array associative array containing the structured questionnaire.
+     */
     public static function make($text, array $config = []) {
         return (new PollFromText())->parse($text, $config);
     }

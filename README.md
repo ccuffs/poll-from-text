@@ -220,6 +220,18 @@ array(1) {
 }
 ```
 
+### 3.1 Specific configuration
+
+Both `parse()` and `make()` accept a `$config` which is an array of configuration to consider when generating the questionnaire. Below is a complete list of all available configuration options:
+
+```php
+$config = [
+    'multiline_question' => false,                   // if `true`, questions are allowed to have `\n` in their text.
+    'attr_validation' => PollFromText::ATTR_AS_TEXT, // allow any text a attribute (no validation)
+];
+```
+
+
 ### 4. Testing (related to the package development)
 
 If you plan on changing how the package works, be sure to clone it first: 

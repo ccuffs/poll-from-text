@@ -1,11 +1,17 @@
 <?php
 
-$poller = new CCUFFS\Text\PollFromText();
+use CCUFFS\Text\PollFromText;
 
-test('recognize attribute simple question', function() use ($poller) {
+$poller = new PollFromText();
+
+$config = [
+    'attr_validation' => PollFromText::ATTR_AS_STRICT_JSON
+];
+
+test('recognize attribute simple question', function() use ($poller, $config) {
     $poll = $poller->parse('
         {"attr":true} Choose favorite color
-    ');
+    ', $config);
 
     $this->assertEquals([
         [
@@ -16,11 +22,11 @@ test('recognize attribute simple question', function() use ($poller) {
     ], $poll);
 });
 
-test('recognize attribute select question', function() use ($poller) {
+test('recognize attribute select question', function() use ($poller, $config) {
     $poll = $poller->parse('
         {"attr":true} Choose favorite color
         * Green
-    ');
+    ', $config);
 
     $this->assertEquals([
         [
@@ -32,10 +38,10 @@ test('recognize attribute select question', function() use ($poller) {
     ], $poll);
 });
 
-test('complext attribute list', function() use ($poller) {
+test('complext attribute list', function() use ($poller, $config) {
     $poll = $poller->parse('
         {"attr":"value", "attr2":"value"} Type favorite color
-    ');
+    ', $config);
 
     $this->assertEquals([
         [
@@ -46,10 +52,10 @@ test('complext attribute list', function() use ($poller) {
     ], $poll);
 });
 
-test('question with attribute char', function() use ($poller) {
+test('question with attribute char', function() use ($poller, $config) {
     $poll = $poller->parse('
         {"attr":"value"} Choose { favorite } color
-    ');
+    ', $config);
 
     $this->assertEquals([
         [
@@ -60,8 +66,8 @@ test('question with attribute char', function() use ($poller) {
     ], $poll);
 });
 
-test('throw exception on wrong attribute format', function() use ($poller) {
+test('throw exception on wrong attribute format', function() use ($poller, $config) {
     $poll = $poller->parse('
         {attr = "value" attr2 = "value"} Choose favorite color
-    ');
+    ', $config);
 })->throws(UnexpectedValueException::class);

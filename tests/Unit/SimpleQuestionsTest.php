@@ -46,7 +46,7 @@ test('multiline simple question', function() use ($poller) {
              multiline question?
     ';
     $poll = $poller->parse($question, [
-        'mutliline_question' => true
+        'multiline_question' => true
     ]);
     $this->assertEquals([[
         'text' => 'Is this a multiline question?',
@@ -60,7 +60,7 @@ test('multiline parsed as one simple question', function() use ($poller) {
         This is another
     ';
     $poll = $poller->parse($question, [
-        'mutliline_question' => false
+        'multiline_question' => false
     ]);
     $this->assertEquals([
         [

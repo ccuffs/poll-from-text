@@ -1,12 +1,18 @@
 <?php
 
-$poller = new CCUFFS\Text\PollFromText();
+use CCUFFS\Text\PollFromText;
 
-test('attribute in select option (star)', function() use ($poller) {
+$poller = new PollFromText();
+
+$config = [
+    'attr_validation' => PollFromText::ATTR_AS_TEXT,
+];
+
+test('attribute in select option (star)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true} * Green
-    ');
+        {attr} * Green
+    ', $config);
 
     $this->assertEquals([
         [
@@ -15,18 +21,18 @@ test('attribute in select option (star)', function() use ($poller) {
             'options' => [
                 [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('attribute in select option (no spaces, star)', function() use ($poller) {
+test('attribute in select option (no spaces, star)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true}*Green
-    ');
+        {attr}*Green
+    ', $config);
 
     $this->assertEquals([
         [
@@ -35,19 +41,19 @@ test('attribute in select option (no spaces, star)', function() use ($poller) {
             'options' => [
                 [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('attribute in select option (crazy format, star)', function() use ($poller) {
+test('attribute in select option (crazy format, star)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {   "attr"  :    true     }*Green
-        {   "attr"  :    false     }   *    Blue
-    ');
+        {   attr_true     }*Green
+        {   attr_false    }   *    Blue
+    ', $config);
 
     $this->assertEquals([
         [
@@ -56,22 +62,22 @@ test('attribute in select option (crazy format, star)', function() use ($poller)
             'options' => [
                 [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr_true'
                 ],
                 [
                     'text' => 'Blue',
-                    'data' => ['attr' => false]
+                    'data' => 'attr_false'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('option with attribute char (start)', function() use ($poller) {
+test('option with attribute char (start)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true} * Green is { my } favorite
-    ');
+        {attr} * Green is { my } favorite
+    ', $config);
 
     $this->assertEquals([
         [
@@ -80,7 +86,7 @@ test('option with attribute char (start)', function() use ($poller) {
             'options' => [
                 [
                     'text' => 'Green is { my } favorite',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
@@ -88,19 +94,21 @@ test('option with attribute char (start)', function() use ($poller) {
 });
 
 
-test('throw exception on wrong attribute format (star)', function() use ($poller) {
-    $poll = $poller->parse('
-        Choose favorite color
-        {attr = "value" attr2 = "value"} * Green
-    ');
-})->throws(UnexpectedValueException::class);
+test('throw exception on wrong attribute format (star)', function() use ($poller, $config) {
+    expect(
+        $poll = $poller->parse('
+            Choose favorite color
+            {attr = "value" attr2 = "value"} * Green
+        ', $config)
+    )->toBeArray();
+});
 
 
-test('attribute in select option (dash)', function() use ($poller) {
+test('attribute in select option (dash)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true} - Green
-    ');
+        {attr} - Green
+    ', $config);
 
     $this->assertEquals([
         [
@@ -109,18 +117,18 @@ test('attribute in select option (dash)', function() use ($poller) {
             'options' => [
                 [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('attribute in select option (no spaces, dash)', function() use ($poller) {
+test('attribute in select option (no spaces, dash)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true}-Green
-    ');
+        {attr}-Green
+    ', $config);
 
     $this->assertEquals([
         [
@@ -129,19 +137,19 @@ test('attribute in select option (no spaces, dash)', function() use ($poller) {
             'options' => [
                 [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('attribute in select option (crazy format, dash)', function() use ($poller) {
+test('attribute in select option (crazy format, dash)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {   "attr"  :    true     }-Green
-        {   "attr"  :    false     }   -    Blue
-    ');
+        {   attr_true     }-Green
+        {   attr_false    }   -    Blue
+    ', $config);
 
     $this->assertEquals([
         [
@@ -150,22 +158,22 @@ test('attribute in select option (crazy format, dash)', function() use ($poller)
             'options' => [
                 [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr_true'
                 ],
                 [
                     'text' => 'Blue',
-                    'data' => ['attr' => false]
+                    'data' => 'attr_false'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('option with attribute char (dash)', function() use ($poller) {
+test('option with attribute char (dash)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true} - Green is { my } favorite
-    ');
+        {attr} - Green is { my } favorite
+    ', $config);
 
     $this->assertEquals([
         [
@@ -174,7 +182,7 @@ test('option with attribute char (dash)', function() use ($poller) {
             'options' => [
                 [
                     'text' => 'Green is { my } favorite',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
@@ -182,19 +190,21 @@ test('option with attribute char (dash)', function() use ($poller) {
 });
 
 
-test('throw exception on wrong attribute format (dash)', function() use ($poller) {
-    $poll = $poller->parse('
-        Choose favorite color
-        {attr = "value" attr2 = "value"} - Green
-    ');
-})->throws(UnexpectedValueException::class);
+test('not throw exception on wrong attribute format (dash)', function() use ($poller, $config) {
+    expect(
+        $poll = $poller->parse('
+            Choose favorite color
+            {attr = "value" attr2 = "value"} - Green
+        ', $config)
+    )->toBeArray();
+});
 
 
-test('attribute in select option (parentheses)', function() use ($poller) {
+test('attribute in select option (parentheses)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true} a) Green
-    ');
+        {attr} a) Green
+    ', $config);
 
     $this->assertEquals([
         [
@@ -203,18 +213,18 @@ test('attribute in select option (parentheses)', function() use ($poller) {
             'options' => [
                 'a' => [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('attribute in select option (no spaces, parentheses)', function() use ($poller) {
+test('attribute in select option (no spaces, parentheses)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":true}a)Green
-    ');
+        {attr}a)Green
+    ', $config);
 
     $this->assertEquals([
         [
@@ -223,19 +233,19 @@ test('attribute in select option (no spaces, parentheses)', function() use ($pol
             'options' => [
                 'a' => [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('attribute in select option (crazy format, parentheses)', function() use ($poller) {
+test('attribute in select option (crazy format, parentheses)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {   "attr"  :    true     }a)Green
-        {   "attr"  :    false     }   b)    Blue
-    ');
+        {   attr_true     }a)Green
+        {   attr_false    }   b)    Blue
+    ', $config);
 
     $this->assertEquals([
         [
@@ -244,22 +254,22 @@ test('attribute in select option (crazy format, parentheses)', function() use ($
             'options' => [
                 'a' => [
                     'text' => 'Green',
-                    'data' => ['attr' => true]
+                    'data' => 'attr_true'
                 ],
                 'b' => [
                     'text' => 'Blue',
-                    'data' => ['attr' => false]
+                    'data' => 'attr_false'
                 ]
             ]
         ],
     ], $poll);
 });
 
-test('option with attribute char (parentheses)', function() use ($poller) {
+test('option with attribute char (parentheses)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {"attr":"string", "field": 20} a) Green is { my } favorite
-    ');
+        {attr_string field_20} a) Green is { my } favorite
+    ', $config);
 
     $this->assertEquals([
         [
@@ -268,7 +278,7 @@ test('option with attribute char (parentheses)', function() use ($poller) {
             'options' => [
                 'a' => [
                     'text' => 'Green is { my } favorite',
-                    'data' => ['attr' => 'string', 'field' => 20]
+                    'data' => 'attr_string field_20'
                 ]
             ]
         ],
@@ -276,9 +286,32 @@ test('option with attribute char (parentheses)', function() use ($poller) {
 });
 
 
-test('throw exception on wrong attribute format (parentheses)', function() use ($poller) {
+test('not throw exception on wrong attribute format (parentheses)', function() use ($poller, $config) {
+    expect(
+        $poll = $poller->parse('
+            Choose favorite color
+            {attr = "value" attr2 = "value"} a) Green
+        ', $config)
+    )->toBeArray();
+});
+
+
+test('attribute in select option (star, quotes)', function() use ($poller, $config) {
     $poll = $poller->parse('
         Choose favorite color
-        {attr = "value" attr2 = "value"} a) Green
-    ');
-})->throws(UnexpectedValueException::class);
+        {"attr"} * Green
+    ', $config);
+
+    $this->assertEquals([
+        [
+            'text' => 'Choose favorite color',
+            'type' => 'select',
+            'options' => [
+                [
+                    'text' => 'Green',
+                    'data' => '"attr"'
+                ]
+            ]
+        ],
+    ], $poll);
+});

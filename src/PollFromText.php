@@ -13,6 +13,24 @@ namespace CCUFFS\Text;
 class PollFromText
 {
     /**
+     * Allow question/answer attributes to be any text.
+     */
+    public const ATTR_AS_TEXT = 1;
+    
+    /**
+     * Force question/answer attributes to be a valid JSON string.
+     */    
+    public const ATTR_AS_STRICT_JSON = 2;
+
+    /**
+     * Lista of available attribute configurations.
+     */
+    private array $attrConfigs = [
+        self::ATTR_AS_TEXT,
+        self::ATTR_AS_STRICT_JSON
+    ];
+
+    /**
      * @param mixed $text text to be parsed into a questionnaire
      * @param array $config specific configuration for this parsing, e.g. allow multiline questions.
      * 
@@ -27,8 +45,8 @@ class PollFromText
         return preg_split('/\R+/', $text, 0, PREG_SPLIT_NO_EMPTY);
     }
 
-    protected function findJsonStringStartingAt($startIndex, $text) {
-        $json = '';
+    protected function findDataStringStartingAt($startIndex, $text) {
+        $data = '';
         $chars = 0;
         $braces = 0;
 
@@ -38,13 +56,13 @@ class PollFromText
 
         do {
             $currentChar = $text[$startIndex];
-            $json .= $currentChar;
+            $data .= $currentChar;
 
             if ($currentChar == '{') { $braces++; }
             if ($currentChar == '}') { $braces--; }
 
             if ($braces == 0) {
-                return $json;
+                return $data;
             }
 
         } while ($startIndex++ < strlen($text));
@@ -52,7 +70,7 @@ class PollFromText
         return $text;
     }
 
-    protected function fillStructureWithDataAttribute(& $structure) {
+    protected function fillStructureWithDataAttribute(& $structure, array $config = []) {
         $text = trim($structure['text']);
         $textFirstChar = $text[0];
 
@@ -64,7 +82,7 @@ class PollFromText
         // {...} text here
         // {...} text here { this should be text } again
 
-        $data = $this->findJsonStringStartingAt(0, $text);
+        $data = $this->findDataStringStartingAt(0, $text);
 
         if (empty($data)) {
             return false;
@@ -73,12 +91,12 @@ class PollFromText
         $textWithoutAttr = str_replace($data, '', $text);
 
         $structure['text'] = trim($textWithoutAttr);
-        $structure['data'] = $this->decodeAttribute($textWithoutAttr, $data);
+        $structure['data'] = $this->decodeAttribute($textWithoutAttr, $data, $config);
 
         return true;
     }
 
-    protected function fillStructureWithOption(& $structure) {
+    protected function fillStructureWithOption(& $structure, array $config = []) {
         $text = trim($structure['text']);
         $firstChar = $text[0];
         $optionChars = ['-', '*']; // TODO: make a config?
@@ -120,7 +138,7 @@ class PollFromText
         return true;
     }
 
-    protected function extractStructure($text) {
+    protected function extractStructure($text, array $config = []) {
         $text = trim($text);
         $structure = [
             'type' => 'question',
@@ -134,7 +152,7 @@ class PollFromText
         // Something like the following:
         // {...} text here
         // {...} text here { this should be text } again
-        $this->fillStructureWithDataAttribute($structure);
+        $this->fillStructureWithDataAttribute($structure, $config);
 
         // Something like the following:
         //   a) option text
@@ -142,18 +160,39 @@ class PollFromText
         //   no_space_here) option text
         //   - option text
         //   * option text
-        $this->fillStructureWithOption($structure);
+        $this->fillStructureWithOption($structure, $config);
 
         return $structure;
     }
 
-    protected function decodeAttribute($text, $dataAttr) {
-        try {
-            $flags = JSON_THROW_ON_ERROR | JSON_NUMERIC_CHECK;
-            $data = json_decode($dataAttr, true, 512, $flags);
-            return $data;
-        } catch (\JsonException $e) {
-            throw new \UnexpectedValueException("Data attribute '$dataAttr' is not valid JSON in use at text '$text'.", 1, $e);
+    protected function removeDataGuardChars($text) {
+        $text = trim($text);
+        return trim(substr($text, 1, -1));
+    }
+
+    protected function decodeAttribute($text, $dataAttr, array $config = []) {
+        $requestedAttrValidation = isset($config['attr_validation']) ? $config['attr_validation'] : self::ATTR_AS_TEXT;
+
+        foreach($this->attrConfigs as $availableAttrConfig) {
+            $requestedThisAttrValidation = ($requestedAttrValidation & $availableAttrConfig) != 0;
+
+            if (!$requestedThisAttrValidation) {
+                continue;
+            }
+
+            if ($availableAttrConfig == self::ATTR_AS_TEXT) {
+                return $this->removeDataGuardChars($dataAttr);
+
+            } else if ($availableAttrConfig == self::ATTR_AS_STRICT_JSON) {
+                try {
+                    $flags = JSON_THROW_ON_ERROR | JSON_NUMERIC_CHECK;
+                    $data = json_decode($dataAttr, true, 512, $flags);
+                    return $data;
+
+                } catch (\JsonException $e) {
+                    throw new \UnexpectedValueException("Data attribute '$dataAttr' is not valid JSON in use at text '$text'.", 1, $e);
+                }
+            }
         }
     }
 
@@ -209,7 +248,12 @@ class PollFromText
     }
 
     /**
+     * Parse the given text and return an array of questions.
      * 
+     * @param mixed $text text to be parsed into a questionnaire
+     * @param array $config specific configuration for this parsing, e.g. allow multiline questions.
+     * 
+     * @return array associative array containing the structured questionnaire.
      */
     public function parse($text, array $config = [])
     {
@@ -233,11 +277,11 @@ class PollFromText
                 continue;
             }
 
-            $structure = $this->extractStructure($currentLine);
+            $structure = $this->extractStructure($currentLine, $config);
             $currentType = $structure['type'];
 
             if ($currentType == 'question') {
-                if($previousType == 'question' && @$config['mutliline_question']) {
+                if($previousType == 'question' && @$config['multiline_question']) {
                     $this->amendPreviousQuestion($questions, $structure);
                 } else {
                     $questions[] = $this->createQuestion($structure);

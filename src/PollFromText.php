@@ -107,6 +107,7 @@ class PollFromText
             // * an option
             $structure['text'] = trim(substr($text, 1));
             $structure['type'] = 'option';
+            $structure['marker'] = $firstChar;
 
             return true;
         }
@@ -132,10 +133,16 @@ class PollFromText
             return false;
         }
 
+        $value = trim($value);
+
         $structure['text'] = $text;
         $structure['value'] = $value;
         $structure['type'] = 'option';
+        $structure['marker'] = $value;
+        $structure['separator'] = $separator;
+
         return true;
+
     }
 
     protected function extractStructure($text, array $config = []) {
@@ -218,18 +225,30 @@ class PollFromText
     protected function createOption(array $structure) {
         $text = trim($structure['text']);
 
+        $entry = [
+            'text' => $text,
+        ];
+
+        if (isset($structure['marker'])) {
+            $entry['marker'] = $structure['marker'];
+        }
+
+        if (isset($structure['separator'])) {
+            $entry['separator'] = $structure['separator'];
+        }
+
         if (!empty($structure['data'])) {
-            $text = ['text' => $text, 'data' => $structure['data']];
-        }        
+            $entry['data'] = $structure['data'];
+        }
 
         if (!empty($structure['value'])) {
             $key = $structure['value'];
             return [
-                $key => $text
+                $key => $entry
             ];
         }
         
-        return [$text];
+        return [$entry];
     }
 
     protected function addOptionToPreviousQuestion(& $questions, array $structure) {

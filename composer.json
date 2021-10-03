@@ -1,5 +1,6 @@
 {
     "name": "ccuffs/poll-from-text",
+    "version": "2.0.0",
     "description": "Convenient package to create polls (questionnaires) from pure text minimally organized in lines.",
     "keywords": ["poll", "survey", "questionnaire", "form", "nlp"],
     "license": "MIT",

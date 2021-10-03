@@ -17,7 +17,10 @@ test('one simple, one select', function() use ($poller) {
         [
             'text' => 'Choose best food',
             'type' => 'select',
-            'options' => ['Pasta', 'Stake']
+            'options' => [
+                ['text' => 'Pasta', 'marker' => '-'],
+                ['text' => 'Stake', 'marker' => '-'],
+            ]
         ]
     ], $poll);
 });

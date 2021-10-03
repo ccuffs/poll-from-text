@@ -32,7 +32,9 @@ test('recognize attribute select question', function() use ($poller, $config) {
         [
             'text' => 'Choose favorite color',
             'type' => 'select',
-            'options' => ['Green'],
+            'options' => [
+                ['text' => 'Green', 'marker' => '*'],
+            ],
             'data' => 'attr'
         ],
     ], $poll);

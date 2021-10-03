@@ -112,8 +112,10 @@ array(1) {
     string(6) "select"
     ["options"]=>
     array(1) {
-      [0]=>
-      string(5) "Green"
+      ["text"]=>
+      string(5) "Green",
+      ["marker"]=>
+      string(1) "-"
     }
   }
 }
@@ -145,8 +147,14 @@ array(1) {
     string(6) "select"
     ["options"]=>
     array(1) {
-      ["a"]=>
-      string(5) "Green"
+     ["a"]=>
+      array(3) {
+        ["text"]=>
+        string(5) "Green"
+        ["marker"]=>
+        string(1) "a"
+        ["separator"]=>
+        string(1) ")"
     }
   }
 }
@@ -209,6 +217,10 @@ array(1) {
       ["a"]=> array(2) {
           ["text"]=>
           string(5) "Green"
+          ["marker"]=>
+          string(1) "a"
+          ["separator"]=>
+          string(1) ")"          
           ["data"]=>
           array(1) {
               ["attr"]=>
